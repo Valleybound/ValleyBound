@@ -330,11 +330,17 @@ def main():
 
     manifest = {"format": 1, "generated": int(now), "files": files}
     manifest_body = json.dumps(manifest, sort_keys=True, indent=1)
-    old_manifest = None
+    # The manifest is rewritten only when the file list actually changed —
+    # the "generated" stamp is refreshed at that moment, never on its own,
+    # so an unchanged run commits nothing at all.
+    old_files = None
     if os.path.exists(MANIFEST_PATH):
         with open(MANIFEST_PATH) as handle:
-            old_manifest = handle.read()
-    if changed or old_manifest != manifest_body:
+            try:
+                old_files = json.load(handle).get("files")
+            except ValueError:
+                old_files = None
+    if changed or old_files != files:
         with open(MANIFEST_PATH, "w") as handle:
             handle.write(manifest_body)
         changed = True
