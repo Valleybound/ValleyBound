@@ -15,8 +15,16 @@
    "markets": 8,
    "sha256": "31cc084ef4afbf75bc1aca33293e15902e59762ce88e9aebf162125eb4366dd1",
    "size": 169293
+  },
+  {
+   "collected": 1793269851,
+   "file": "1793269851.json",
+   "items": 555,
+   "markets": 8,
+   "sha256": "e09cada5086bf0f42b4a2d5ddb50c20ee308fb81b533a1e1a4ebb8681bebf3d4",
+   "size": 169228
   }
  ],
  "format": 1,
- "generated": 1793266567
+ "generated": 1793269931
 }
