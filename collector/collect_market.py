@@ -273,16 +273,41 @@ def main():
     events = []
 
     # One file per observation, named for the epoch the feed itself
-    # carries. Written only when the content actually changed; corrected
-    # content under the same timestamp replaces the file.
+    # carries. Written only when the market content actually changed:
+    #   - the same epoch with different content is a correction — replaced;
+    #   - a newer epoch with identical content is not a new observation —
+    #     skipped, so the file list (and the manifest, and the commit
+    #     history) only grows when the market actually moved.
     name = "%d.json" % bundle["collected"]
     path = os.path.join(DATA_DIR, name)
     body = json.dumps(bundle, sort_keys=True, separators=(",", ":"))
-    if stored_canonical_hash(path) != canonical_hash(canonical):
+    new_hash = canonical_hash(canonical)
+    latest_epoch = -1
+    latest_hash = None
+    for entry in os.listdir(DATA_DIR):
+        if not entry.endswith(".json") or entry == "manifest.json":
+            continue
+        try:
+            epoch = int(entry[:-5])
+        except ValueError:
+            continue
+        if epoch > latest_epoch:
+            latest_epoch = epoch
+            latest_hash = stored_canonical_hash(
+                os.path.join(DATA_DIR, entry))
+    if os.path.exists(path):
+        if stored_canonical_hash(path) != new_hash:
+            with open(path, "w") as handle:
+                handle.write(body)
+            changed = True
+            events.append("corrected %s" % name)
+    elif latest_hash != new_hash:
         with open(path, "w") as handle:
             handle.write(body)
         changed = True
         events.append("wrote %s" % name)
+    else:
+        events.append("content unchanged since %d" % latest_epoch)
 
     # Prune past the retention window — on unchanged runs too.
     cutoff = now - RETENTION_DAYS * 86400
