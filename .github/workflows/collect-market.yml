@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 concurrency:
   group: collect-market
@@ -37,3 +38,19 @@ jobs:
           else
             echo "No changes to commit."
           fi
+
+      # Self-reporting: if the collector fails, an issue is opened on the
+      # repo so the breakage is never silent (GitHub also emails the
+      # account owner when a workflow run fails).
+      - name: Open an issue on failure
+        if: failure()
+        run: |
+          gh issue create \
+            --title "Market collection failed" \
+            --body "The scheduled collector run failed (run ${{ github.run_id }}). The existing data was left untouched; check the run log: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --label "collector-failure" || \
+          gh issue create \
+            --title "Market collection failed" \
+            --body "The scheduled collector run failed (run ${{ github.run_id }}). The existing data was left untouched; check the run log: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        env:
+          GH_TOKEN: ${{ github.token }}
